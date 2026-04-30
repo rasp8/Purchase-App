@@ -1,0 +1,10 @@
+{
+  "name": "purchase-app-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix purchase-app run dev",
+    "build": "npm --prefix purchase-app run build",
+    "start": "npm --prefix purchase-app run preview",
+    "postinstall": "npm --prefix purchase-app run postinstall"
+  }
+}
