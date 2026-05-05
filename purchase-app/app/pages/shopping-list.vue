@@ -282,12 +282,8 @@ function fmt(v: number | null): string {
         </div>
       </div>
 
-      <!-- Footer: hint + clear -->
-      <div class="flex items-center justify-between">
-        <p class="text-xs text-muted">
-          <UIcon name="i-lucide-info" class="inline align-middle mr-1" />
-          Start typing a product name to see suggestions from your purchase history.
-        </p>
+      <!-- Footer: clear -->
+      <div class="flex items-center justify-end">
         <UButton color="neutral" variant="soft" icon="i-lucide-trash-2" @click="clearList">
           Clear list
         </UButton>
