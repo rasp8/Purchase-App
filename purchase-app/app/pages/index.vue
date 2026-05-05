@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getSession, isSupabaseConfigured, sendMagicLink, validateCode } from '~/composables/supabase'
 
-useHead({ title: 'Kitchen App' })
+useHead({ title: 'Login | Purchase App' })
 
 const email = ref('')
 const loading = ref(false)
@@ -21,6 +21,18 @@ onMounted(async () => {
 })
 
 async function handleSendMagicLink() {
+  if (!email.value) {
+    statusMessage.value = 'Please enter a valid email address.'
+    return
+  }
+
+  // Non-blocking dev mode: bypass Supabase when not configured
+  if (!supabaseReady.value) {
+    codeRequested.value = true
+    statusMessage.value = 'Dev mode: enter any 6-digit code to continue.'
+    return
+  }
+
   loading.value = true
   try {
     const result = await sendMagicLink(email.value)
@@ -40,6 +52,13 @@ watch(pin, async (newPin) => {
 
 async function handleVerificationCode() {
   const pinCode = Array.isArray(pin.value) ? pin.value.join('') : pin.value
+
+  // Non-blocking dev mode: any 6-digit code proceeds
+  if (!supabaseReady.value) {
+    await navigateTo('/home')
+    return
+  }
+
   const result = await validateCode(email.value, pinCode)
 
   if (result.session) {
@@ -57,99 +76,48 @@ async function handleVerificationCode() {
 
 <template>
   <UMain>
-    <UContainer class="py-16">
-      <div class="mx-auto flex min-h-[70vh] max-w-5xl items-center">
-        <div class="grid w-full gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <UCard class="p-8 md:p-10">
-            <div class="space-y-6">
-              <div class="space-y-3">
-                <UBadge color="primary" variant="soft">Blank scaffold</UBadge>
-                <h1 class="text-4xl font-bold tracking-tight">Kitchen-App</h1>
-                <p class="text-lg text-muted">
-                  This is an empty Nuxt starter derived from the Finance-App architecture, with Supabase
-                  client and auth wiring kept in place for later integration.
-                </p>
-              </div>
+    <UContainer>
+      <div class="flex flex-col items-center justify-center pt-25 space-y-8">
 
-              <div class="grid gap-3 sm:grid-cols-2">
-                <UCard variant="soft" class="p-4">
-                  <p class="font-semibold">Included</p>
-                  <p class="text-sm text-muted">Nuxt 4, Nuxt UI, Pinia, static generation, and shared app shell.</p>
-                </UCard>
-                <UCard variant="soft" class="p-4">
-                  <p class="font-semibold">Deferred</p>
-                  <p class="text-sm text-muted">Supabase project connection, schema, and all kitchen-specific features.</p>
-                </UCard>
-              </div>
+        <div v-if="codeRequested">
+          <div class="text-center pb-10">
+            <h1 class="text-4xl font-bold mb-4">Check your email</h1>
+            <p class="text-lg text-gray-400">Enter the 6-digit code below to sign in.</p>
+            <p v-if="statusMessage" class="text-sm text-yellow-400 mt-2">{{ statusMessage }}</p>
+          </div>
+          <UPinInput v-model="pin" :length="6" color="primary" highlight size="xl" class="mt-4 w-full justify-center" />
+        </div>
 
-              <div class="flex flex-wrap gap-3">
-                <UButton to="/home" color="primary">Open homepage</UButton>
-                <UButton
-                  to="https://nuxt.com/docs/getting-started/introduction"
-                  target="_blank"
-                  color="neutral"
-                  variant="soft"
-                >
-                  Nuxt docs
-                </UButton>
-              </div>
-            </div>
-          </UCard>
-
-          <UCard class="p-8">
-            <div v-if="supabaseReady" class="space-y-5">
-              <div class="space-y-2">
-                <h2 class="text-2xl font-semibold">Sign in</h2>
-                <p class="text-sm text-muted">Use email OTP once the Supabase project is connected.</p>
-              </div>
-
-              <div v-if="codeRequested" class="space-y-4">
-                <p class="text-sm text-muted">Enter the 6-digit code sent to your email.</p>
-                <UPinInput v-model="pin" :length="6" color="primary" highlight size="xl" class="w-full justify-center" />
-              </div>
-
-              <UFormField v-else label="Email">
-                <UInput
-                  v-model="email"
-                  type="email"
-                  size="xl"
-                  class="w-full"
-                  placeholder="name@example.com"
-                  :disabled="loading"
-                />
-              </UFormField>
-
-              <UButton
-                v-if="!codeRequested"
-                class="w-full"
-                color="primary"
+        <div v-else>
+          <div class="text-center pb-10">
+            <h1 class="text-4xl font-bold mb-4">Welcome!</h1>
+            <p class="text-lg text-gray-400">Enter your email to get started.</p>
+          </div>
+          <UCard class="w-full max-w-md p-8">
+            <UFormField class="text-lg font-semibold mb-4" required>
+              <UInput
+                type="email"
+                variant="soft"
                 size="xl"
+                class="w-full"
+                color="neutral"
+                placeholder="Enter your email..."
+                v-model="email"
+                :disabled="loading"
+              />
+              <UButton
+                class="mt-4 w-full"
+                color="primary"
                 :loading="loading"
                 @click="handleSendMagicLink"
               >
                 Send verification code
               </UButton>
-
-              <p v-if="statusMessage" class="text-sm text-muted">{{ statusMessage }}</p>
-            </div>
-
-            <div v-else class="space-y-4">
-              <div class="space-y-2">
-                <h2 class="text-2xl font-semibold">Supabase pending</h2>
-                <p class="text-sm text-muted">
-                  Add your public URL and anon key when the new Supabase project is ready.
-                </p>
-              </div>
-
-              <UAlert
-                color="warning"
-                variant="soft"
-                title="Auth is disabled until configuration is added."
-                description="Set NUXT_PUBLIC_SUPABASE_URL and NUXT_PUBLIC_SUPABASE_ANON_KEY to enable OTP sign-in."
-              />
-            </div>
+            </UFormField>
+            <p v-if="statusMessage" class="text-sm text-muted mt-2">{{ statusMessage }}</p>
           </UCard>
         </div>
+
       </div>
     </UContainer>
   </UMain>
