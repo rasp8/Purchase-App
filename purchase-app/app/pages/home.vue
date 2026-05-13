@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { getSession, isSupabaseConfigured } from '~/composables/supabase'
-import { useSignOut } from '~/composables/useSignOut'
 import { useKitchenStore } from '~/composables/useKitchenStore'
 import type { KitchenItem } from '~/composables/useKitchenStore'
 
@@ -25,8 +23,7 @@ const showAddModal = ref(false)
 const showEditModal = ref(false)
 const editingItemId = ref<string | null>(null)
 
-const { items: homepageItems } = useKitchenStore()
-const nextProductId = ref(1004)
+const { items: homepageItems, addItems, editItem, deleteItem } = useKitchenStore()
 
 /** Unique product names already entered, for autocomplete suggestions. */
 const uniqueProductNames = computed(() => {
@@ -146,12 +143,6 @@ function removeDraftRow(id: number) {
   draftRows.value = draftRows.value.filter(row => row.id !== id)
 }
 
-function generateProductId() {
-  const productId = `PRD-${nextProductId.value}`
-  nextProductId.value += 1
-  return productId
-}
-
 function formatPurchaseDate(value: string) {
   if (!value) return '-'
 
@@ -173,36 +164,32 @@ function openEditModal(item: HomepageItem) {
   showEditModal.value = true
 }
 
-function deleteItem(id: string) {
-  homepageItems.value = homepageItems.value.filter(item => item.id !== id)
+async function handleDeleteItem(id: string) {
+  await deleteItem(id)
 }
 
-function saveEditedItem() {
+async function saveEditedItem() {
   if (!editingItemId.value || !canSaveEdit.value) return
 
-  const rowIndex = homepageItems.value.findIndex(item => item.id === editingItemId.value)
-  if (rowIndex === -1) return
-
-  homepageItems.value[rowIndex] = {
-    ...homepageItems.value[rowIndex],
+  await editItem(editingItemId.value, {
     productName: editForm.productName.trim(),
     quantity: String(editForm.quantity).trim() || '-',
     unit: editForm.unit,
     price: String(editForm.price).trim(),
     purchaseDate: editForm.purchaseDate,
     notes: editForm.notes.trim() || undefined,
-  }
+  })
 
   resetEditForm()
 }
 
-function handleAddItem() {
+async function handleAddItem() {
   if (!canAddItem.value) return
 
   const rowsToAdd = validDraftRows.value
     .filter(row => row.productName.trim().length > 0)
     .map(row => ({
-      id: generateProductId(),
+      id: crypto.randomUUID(),
       productName: row.productName.trim(),
       quantity: String(row.quantity).trim() || '-',
       unit: row.unit || 'each',
@@ -211,7 +198,7 @@ function handleAddItem() {
       notes: row.notes.trim() || undefined,
     }))
 
-  homepageItems.value.unshift(...rowsToAdd)
+  await addItems(rowsToAdd)
   closeAddModal()
 }
 </script>
@@ -326,7 +313,7 @@ function handleAddItem() {
                               variant="ghost"
                               icon="i-lucide-trash-2"
                               aria-label="Delete item"
-                              @click="deleteItem(item.id)"
+                              @click="handleDeleteItem(item.id)"
                             />
                           </div>
                         </td>

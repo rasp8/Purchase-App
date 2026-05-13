@@ -45,8 +45,42 @@ const SEED_ITEMS: KitchenItem[] = [
   { id: 'PRD-1003', productName: 'Pasta',     quantity: '400', unit: 'g',    price: '2.25', purchaseDate: '2026-04-24' },
 ]
 
+import { isSupabaseConfigured } from '~/composables/supabase/client'
+import { getItems, insertItems, upsertItem, removeItem } from '~/composables/supabase/items'
+
 /** Shared purchase-history state across all pages. */
 export function useKitchenStore() {
-  const items = useState<KitchenItem[]>('kitchen-items', () => [...SEED_ITEMS])
-  return { items }
+  const items = useState<KitchenItem[]>('kitchen-items', () => [])
+  const loaded = useState<boolean>('kitchen-items-loaded', () => false)
+
+  async function fetchItems() {
+    if (!isSupabaseConfigured()) {
+      if (items.value.length === 0) items.value = [...SEED_ITEMS]
+      loaded.value = true
+      return
+    }
+    items.value = await getItems()
+    loaded.value = true
+  }
+
+  async function addItems(newItems: KitchenItem[]) {
+    if (isSupabaseConfigured()) await insertItems(newItems)
+    items.value.unshift(...newItems)
+  }
+
+  async function editItem(id: string, data: Partial<Omit<KitchenItem, 'id'>>) {
+    const existing = items.value.find(i => i.id === id)
+    if (!existing) return
+    const updated: KitchenItem = { ...existing, ...data }
+    if (isSupabaseConfigured()) await upsertItem(updated)
+    const idx = items.value.findIndex(i => i.id === id)
+    if (idx !== -1) items.value[idx] = updated
+  }
+
+  async function deleteItem(id: string) {
+    if (isSupabaseConfigured()) await removeItem(id)
+    items.value = items.value.filter(i => i.id !== id)
+  }
+
+  return { items, loaded, fetchItems, addItems, editItem, deleteItem }
 }

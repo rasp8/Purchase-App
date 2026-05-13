@@ -7,7 +7,7 @@ import {
 
 useHead({ title: 'Shopping List | Kitchen App' })
 
-const { items } = useKitchenStore()
+const { items, addItems } = useKitchenStore()
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -82,14 +82,14 @@ function getCompatibleUnits(name: string) {
 
 const toast = useToast()
 
-function onRowChecked(row: ShoppingRow, checked: boolean) {
+async function onRowChecked(row: ShoppingRow, checked: boolean) {
   row.checked = checked
   if (!checked || !row.productName.trim()) return
 
   const today = new Date().toISOString().split('T')[0]  // YYYY-MM-DD
 
   const newEntry = {
-    id:           `PRD-${Date.now()}`,
+    id:           crypto.randomUUID(),
     productName:  row.productName.trim(),
     quantity:     String(row.quantity).trim() || '1',
     unit:         row.unit || 'each',
@@ -98,10 +98,7 @@ function onRowChecked(row: ShoppingRow, checked: boolean) {
     notes:        row.notes.trim() || undefined,
   }
 
-  items.value = [newEntry, ...items.value]
-
-  // Explicitly persist to localStorage as a failsafe for hard-navigation scenarios
-  localStorage.setItem('kitchen-items', JSON.stringify(items.value))
+  await addItems([newEntry])
 
   toast.add({ title: `✓ "${newEntry.productName}" added to purchase list`, color: 'success', duration: 4000 })
 }
