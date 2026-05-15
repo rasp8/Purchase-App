@@ -1,5 +1,5 @@
 import { getSupabase } from './client'
-import type { KitchenItem } from '~/composables/useKitchenStore'
+import type { KitchenItem } from '~/types/kitchen'
 
 function getClient() {
   return getSupabase().schema('purchase-app')

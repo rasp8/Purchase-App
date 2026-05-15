@@ -4,9 +4,11 @@ const { loaded, fetchItems } = useKitchenStore()
 
 const showShellNavigation = computed(() => route.path !== '/')
 
-watch(() => route.path, async (path) => {
-  if (path !== '/' && !loaded.value) await fetchItems()
-}, { immediate: true })
+if (import.meta.client) {
+  watch(() => route.path, async (path) => {
+    if (path !== '/' && !loaded.value) await fetchItems()
+  }, { immediate: true })
+}
 </script>
 
 <template>

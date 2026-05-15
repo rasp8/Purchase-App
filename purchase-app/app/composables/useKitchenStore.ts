@@ -1,12 +1,8 @@
-export type KitchenItem = {
-  id: string
-  productName: string
-  quantity: string
-  unit: string
-  price: string
-  purchaseDate: string
-  notes?: string
-}
+export type { KitchenItem } from '~/types/kitchen'
+
+import type { KitchenItem } from '~/types/kitchen'
+import { isSupabaseConfigured } from '~/composables/supabase/client'
+import { getItems, insertItems, upsertItem, removeItem } from '~/composables/supabase/items'
 
 export const UNIT_OPTIONS = [
   { label: 'Each (count)', value: 'each'  },
@@ -44,9 +40,6 @@ const SEED_ITEMS: KitchenItem[] = [
   { id: 'PRD-1002', productName: 'Olive oil', quantity: '500', unit: 'ml',   price: '8.99', purchaseDate: '2026-04-23' },
   { id: 'PRD-1003', productName: 'Pasta',     quantity: '400', unit: 'g',    price: '2.25', purchaseDate: '2026-04-24' },
 ]
-
-import { isSupabaseConfigured } from '~/composables/supabase/client'
-import { getItems, insertItems, upsertItem, removeItem } from '~/composables/supabase/items'
 
 /** Shared purchase-history state across all pages. */
 export function useKitchenStore() {
