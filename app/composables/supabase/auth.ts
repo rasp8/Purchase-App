@@ -9,35 +9,11 @@ type ValidateCodeResult = {
   error: AuthError | Error | null
 }
 
-export async function sendMagicLink(email: string): Promise<{ success: boolean; message: string }> {
-  if (!email) {
-    return { success: false, message: 'Please enter a valid email address.' }
-  }
-
-  if (!isSupabaseConfigured()) {
-    return { success: false, message: missingConfigMessage }
-  }
-
-  try {
-    const supabase = getSupabase()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: typeof window !== 'undefined' ? window.location.href : '',
-      },
-    })
-
-    if (error) {
-      return { success: false, message: `Error sending magic link: ${error.message}` }
-    }
-
-    return { success: true, message: 'Verification code sent. Check your email.' }
-  } catch (error) {
-    return { success: false, message: error instanceof Error ? error.message : 'Unknown authentication error.' }
-  }
-}
-
 export async function validateCode(email: string, code: string): Promise<ValidateCodeResult> {
+  if (!email || !code) {
+    return { session: null, error: new Error('Email and verification code are required.') }
+  }
+
   if (!isSupabaseConfigured()) {
     return { session: null, error: new Error(missingConfigMessage) }
   }

@@ -1,12 +1,6 @@
-export type KitchenItem = {
-  id: string
-  productName: string
-  quantity: string
-  unit: string
-  price: string
-  purchaseDate: string
-  notes?: string
-}
+import type { KitchenItem, KitchenItemInput } from '~/types/purchase'
+
+export type { KitchenItem, KitchenItemInput } from '~/types/purchase'
 
 export const UNIT_OPTIONS = [
   { label: 'Each (count)', value: 'each'  },
@@ -39,14 +33,71 @@ export function convertQty(qty: number, fromUnit: string, toUnit: string): numbe
   return (qty * from.toBase) / to.toBase
 }
 
-const SEED_ITEMS: KitchenItem[] = [
-  { id: 'PRD-1001', productName: 'Tomatoes',  quantity: '6',   unit: 'each', price: '3.49', purchaseDate: '2026-04-22' },
-  { id: 'PRD-1002', productName: 'Olive oil', quantity: '500', unit: 'ml',   price: '8.99', purchaseDate: '2026-04-23' },
-  { id: 'PRD-1003', productName: 'Pasta',     quantity: '400', unit: 'g',    price: '2.25', purchaseDate: '2026-04-24' },
-]
-
 /** Shared purchase-history state across all pages. */
 export function useKitchenStore() {
-  const items = useState<KitchenItem[]>('kitchen-items', () => [...SEED_ITEMS])
-  return { items }
+  const items = useState<KitchenItem[]>('kitchen-items', () => [])
+  const isLoaded = useState('kitchen-items-loaded', () => false)
+  const isLoading = useState('kitchen-items-loading', () => false)
+  const error = useState<string | null>('kitchen-items-error', () => null)
+
+  async function loadItems(force = false) {
+    if (isLoading.value) return items.value
+    if (isLoaded.value && !force) return items.value
+
+    const { listItems } = useItemsApi()
+
+    isLoading.value = true
+    try {
+      items.value = await listItems()
+      isLoaded.value = true
+      error.value = null
+      return items.value
+    } catch (caughtError) {
+      error.value = caughtError instanceof Error ? caughtError.message : 'Failed to load items.'
+      throw caughtError
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function createItems(payload: KitchenItemInput[]) {
+    const { createItems: createItemsRequest } = useItemsApi()
+    const createdItems = await createItemsRequest(payload)
+    items.value = [...createdItems, ...items.value.filter(existing => !createdItems.some(item => item.id === existing.id))]
+    isLoaded.value = true
+    error.value = null
+    return createdItems
+  }
+
+  async function updateItem(id: string, payload: KitchenItemInput) {
+    const { updateItem: updateItemRequest } = useItemsApi()
+    const updatedItem = await updateItemRequest(id, payload)
+    const itemIndex = items.value.findIndex(item => item.id === id)
+
+    if (itemIndex === -1) {
+      items.value = [updatedItem, ...items.value]
+    } else {
+      items.value[itemIndex] = updatedItem
+      items.value = [...items.value]
+    }
+
+    error.value = null
+    return updatedItem
+  }
+
+  async function deleteItem(id: string) {
+    const { deleteItem: deleteItemRequest } = useItemsApi()
+    await deleteItemRequest(id)
+    items.value = items.value.filter(item => item.id !== id)
+    error.value = null
+  }
+
+  function reset() {
+    items.value = []
+    isLoaded.value = false
+    isLoading.value = false
+    error.value = null
+  }
+
+  return { items, isLoaded, isLoading, error, loadItems, createItems, updateItem, deleteItem, reset }
 }

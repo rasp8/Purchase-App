@@ -2,7 +2,7 @@
 import { getSession, isSupabaseConfigured } from '~/composables/supabase'
 import { useSignOut } from '~/composables/useSignOut'
 import { useKitchenStore } from '~/composables/useKitchenStore'
-import type { KitchenItem } from '~/composables/useKitchenStore'
+import type { KitchenItem, KitchenItemInput } from '~/composables/useKitchenStore'
 
 type HomepageItem = KitchenItem
 
@@ -24,9 +24,16 @@ const sessionEmail = ref<string | null>(null)
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const editingItemId = ref<string | null>(null)
+const toast = useToast()
 
-const { items: homepageItems } = useKitchenStore()
-const nextProductId = ref(1004)
+const {
+  items: homepageItems,
+  isLoading: itemsLoading,
+  loadItems,
+  createItems,
+  updateItem,
+  deleteItem: deleteItemRequest,
+} = useKitchenStore()
 
 /** Unique product names already entered, for autocomplete suggestions. */
 const uniqueProductNames = computed(() => {
@@ -101,8 +108,16 @@ const quickStats = computed(() => [
 onMounted(async () => {
   if (!supabaseReady.value) return
 
-  const session = await getSession()
-  sessionEmail.value = session?.user?.email ?? null
+  try {
+    const session = await getSession()
+    sessionEmail.value = session?.user?.email ?? null
+
+    if (session) {
+      await loadItems()
+    }
+  } catch (error) {
+    console.warn('Failed to initialize purchase history:', error)
+  }
 })
 
 function openAddModal() {
@@ -146,12 +161,6 @@ function removeDraftRow(id: number) {
   draftRows.value = draftRows.value.filter(row => row.id !== id)
 }
 
-function generateProductId() {
-  const productId = `PRD-${nextProductId.value}`
-  nextProductId.value += 1
-  return productId
-}
-
 function formatPurchaseDate(value: string) {
   if (!value) return '-'
 
@@ -173,18 +182,22 @@ function openEditModal(item: HomepageItem) {
   showEditModal.value = true
 }
 
-function deleteItem(id: string) {
-  homepageItems.value = homepageItems.value.filter(item => item.id !== id)
+async function deleteItem(id: string) {
+  try {
+    await deleteItemRequest(id)
+  } catch (error) {
+    toast.add({
+      title: 'Unable to delete item',
+      description: error instanceof Error ? error.message : 'Please try again.',
+      color: 'error',
+    })
+  }
 }
 
-function saveEditedItem() {
+async function saveEditedItem() {
   if (!editingItemId.value || !canSaveEdit.value) return
 
-  const rowIndex = homepageItems.value.findIndex(item => item.id === editingItemId.value)
-  if (rowIndex === -1) return
-
-  homepageItems.value[rowIndex] = {
-    ...homepageItems.value[rowIndex],
+  const payload: KitchenItemInput = {
     productName: editForm.productName.trim(),
     quantity: String(editForm.quantity).trim() || '-',
     unit: editForm.unit,
@@ -193,16 +206,24 @@ function saveEditedItem() {
     notes: editForm.notes.trim() || undefined,
   }
 
-  resetEditForm()
+  try {
+    await updateItem(editingItemId.value, payload)
+    resetEditForm()
+  } catch (error) {
+    toast.add({
+      title: 'Unable to save item',
+      description: error instanceof Error ? error.message : 'Please try again.',
+      color: 'error',
+    })
+  }
 }
 
-function handleAddItem() {
+async function handleAddItem() {
   if (!canAddItem.value) return
 
-  const rowsToAdd = validDraftRows.value
+  const rowsToAdd: KitchenItemInput[] = validDraftRows.value
     .filter(row => row.productName.trim().length > 0)
     .map(row => ({
-      id: generateProductId(),
       productName: row.productName.trim(),
       quantity: String(row.quantity).trim() || '-',
       unit: row.unit || 'each',
@@ -211,8 +232,16 @@ function handleAddItem() {
       notes: row.notes.trim() || undefined,
     }))
 
-  homepageItems.value.unshift(...rowsToAdd)
-  closeAddModal()
+  try {
+    await createItems(rowsToAdd)
+    closeAddModal()
+  } catch (error) {
+    toast.add({
+      title: 'Unable to add items',
+      description: error instanceof Error ? error.message : 'Please try again.',
+      color: 'error',
+    })
+  }
 }
 </script>
 
@@ -255,7 +284,9 @@ function handleAddItem() {
               <div>
                 <h2 class="text-xl font-semibold">Overview</h2>
               </div>
-              <UBadge color="primary" variant="soft">{{ homepageItems.length }} items</UBadge>
+            <UBadge color="primary" variant="soft">
+              {{ itemsLoading ? 'Loading…' : `${homepageItems.length} items` }}
+            </UBadge>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-3">

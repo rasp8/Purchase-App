@@ -7,7 +7,7 @@ import {
 
 useHead({ title: 'Shopping List | Kitchen App' })
 
-const { items } = useKitchenStore()
+const { items, loadItems, createItems } = useKitchenStore()
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -82,14 +82,13 @@ function getCompatibleUnits(name: string) {
 
 const toast = useToast()
 
-function onRowChecked(row: ShoppingRow, checked: boolean) {
+async function onRowChecked(row: ShoppingRow, checked: boolean) {
   row.checked = checked
   if (!checked || !row.productName.trim()) return
 
   const today = new Date().toISOString().split('T')[0]  // YYYY-MM-DD
 
   const newEntry = {
-    id:           `PRD-${Date.now()}`,
     productName:  row.productName.trim(),
     quantity:     String(row.quantity).trim() || '1',
     unit:         row.unit || 'each',
@@ -98,12 +97,18 @@ function onRowChecked(row: ShoppingRow, checked: boolean) {
     notes:        row.notes.trim() || undefined,
   }
 
-  items.value = [newEntry, ...items.value]
-
-  // Explicitly persist to localStorage as a failsafe for hard-navigation scenarios
-  localStorage.setItem('kitchen-items', JSON.stringify(items.value))
-
-  toast.add({ title: `✓ "${newEntry.productName}" added to purchase list`, color: 'success', duration: 4000 })
+  try {
+    await createItems([newEntry])
+    toast.add({ title: `✓ "${newEntry.productName}" added to purchase list`, color: 'success', duration: 4000 })
+  } catch (error) {
+    row.checked = false
+    toast.add({
+      title: 'Unable to add purchase',
+      description: error instanceof Error ? error.message : 'Please try again.',
+      color: 'error',
+      duration: 4000,
+    })
+  }
 }
 
 function removeRow(id: number) {
@@ -139,7 +144,16 @@ function fmt(v: number | null): string {
   if (v === null) return '—'
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v)
 }
+
+onMounted(async () => {
+  try {
+    await loadItems()
+  } catch (error) {
+    console.warn('Failed to load shopping history:', error)
+  }
+})
 </script>
+*** Delete File: C:\Users\jddpa\Desktop\Workspace\Nuxt Apps\Purchase-App\app\plugins\kitchen-store.client.ts
 
 <template>
   <UContainer class="py-8 lg:py-10">

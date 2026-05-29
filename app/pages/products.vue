@@ -11,6 +11,7 @@ const MONTH_NAMES = [
 ]
 
 const { items } = useKitchenStore()
+const { loadItems } = useKitchenStore()
 
 const selectedProduct = ref<string>('')
 const historyRange = ref<HistoryRange>('all')
@@ -213,6 +214,14 @@ function selectProduct(name: string) {
 // When the select changes, re-init the defaults
 watch(selectedProduct, (name) => {
   if (name) selectProduct(name)
+})
+
+onMounted(async () => {
+  try {
+    await loadItems()
+  } catch (error) {
+    console.warn('Failed to load product history:', error)
+  }
 })
 </script>
 

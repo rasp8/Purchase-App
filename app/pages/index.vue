@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getSession, isSupabaseConfigured, sendMagicLink, validateCode } from '~/composables/supabase'
+import { getSession, isSupabaseConfigured, validateCode } from '~/composables/supabase'
 
 useHead({ title: 'Login | Purchase App' })
 
@@ -8,6 +8,7 @@ const loading = ref(false)
 const pin = ref('')
 const codeRequested = ref(false)
 const statusMessage = ref('')
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const supabaseReady = computed(() => isSupabaseConfigured())
 
@@ -20,24 +21,32 @@ onMounted(async () => {
   }
 })
 
-async function handleSendMagicLink() {
-  if (!email.value) {
+async function handleSendVerificationCode() {
+  const normalizedEmail = email.value.trim().toLowerCase()
+
+  if (!emailPattern.test(normalizedEmail)) {
     statusMessage.value = 'Please enter a valid email address.'
     return
   }
 
-  // Non-blocking dev mode: bypass Supabase when not configured
   if (!supabaseReady.value) {
-    codeRequested.value = true
-    statusMessage.value = 'Dev mode: enter any 6-digit code to continue.'
+    statusMessage.value = 'Supabase is not configured yet. Add the environment variables to enable login.'
     return
   }
 
   loading.value = true
   try {
-    const result = await sendMagicLink(email.value)
-    statusMessage.value = result.message
-    codeRequested.value = result.success
+    await $fetch('/api/auth/send-code', {
+      method: 'POST',
+      body: { email: normalizedEmail },
+    })
+
+    email.value = normalizedEmail
+    codeRequested.value = true
+    statusMessage.value = 'Verification code sent. Check your email.'
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to send a verification code right now.'
+    statusMessage.value = message
   } finally {
     loading.value = false
   }
@@ -52,12 +61,6 @@ watch(pin, async (newPin) => {
 
 async function handleVerificationCode() {
   const pinCode = Array.isArray(pin.value) ? pin.value.join('') : pin.value
-
-  // Non-blocking dev mode: any 6-digit code proceeds
-  if (!supabaseReady.value) {
-    await navigateTo('/home')
-    return
-  }
 
   const result = await validateCode(email.value, pinCode)
 
@@ -85,7 +88,7 @@ async function handleVerificationCode() {
             <p class="text-lg text-gray-400">Enter the 6-digit code below to sign in.</p>
             <p v-if="statusMessage" class="text-sm text-yellow-400 mt-2">{{ statusMessage }}</p>
           </div>
-          <UPinInput v-model="pin" :length="6" color="primary" highlight size="xl" class="mt-4 w-full justify-center" />
+          <UPinInput v-model="pin" :length="6" color="primary" type="number" highlight size="xl" class="mt-4 w-full justify-center" />
         </div>
 
         <div v-else>
@@ -109,7 +112,7 @@ async function handleVerificationCode() {
                 class="mt-4 w-full"
                 color="primary"
                 :loading="loading"
-                @click="handleSendMagicLink"
+                @click="handleSendVerificationCode"
               >
                 Send verification code
               </UButton>

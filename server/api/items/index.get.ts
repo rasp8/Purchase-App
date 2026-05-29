@@ -1,0 +1,29 @@
+type ItemRow = {
+  id: string
+  user_id: string
+  product_name: string
+  quantity: string
+  unit: string
+  price: string
+  purchase_date: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export default defineEventHandler(async (event) => {
+  const { user, supabase } = await requireAuth(event)
+  const { data, error } = await supabase
+    .schema('purchase-app')
+    .from('Item')
+    .select('id, user_id, product_name, quantity, unit, price, purchase_date, notes, created_at, updated_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .returns<ItemRow[]>()
+
+  if (error) {
+    throw createError({ statusCode: 500, message: error.message })
+  }
+
+  return (data ?? []).map(toKitchenItem)
+})
