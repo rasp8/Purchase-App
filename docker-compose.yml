@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - nuxt_build:/app/.nuxt
+    env_file:
+      - .env.docker
+    environment:
+      HOST: "0.0.0.0"
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    networks:
+      - supabase_network
+
+networks:
+  supabase_network:
+    name: supabase_network_Purchase-App
+    external: true
+
+volumes:
+  node_modules:
+  nuxt_build:

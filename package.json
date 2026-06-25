@@ -3,8 +3,10 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "app:cloud": "powershell -ExecutionPolicy Bypass -File .\\run-app.ps1 -Mode cloud",
+    "app:local": "powershell -ExecutionPolicy Bypass -File .\\run-app.ps1 -Mode local",
     "build": "nuxt build",
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --host 0.0.0.0 --port 3000",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"

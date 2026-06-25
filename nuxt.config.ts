@@ -7,7 +7,7 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui', '@pinia/nuxt', '@vite-pwa/nuxt'],
   css: ['@/assets/css/main.css'],
   app: {
-    baseURL: '/Purchase-App/',
+    baseURL: '/',
     head: {
       meta: [
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
@@ -17,6 +17,7 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    supabaseServiceRoleKey: process.env.NUXT_SUPABASE_SERVICE_ROLE_KEY || '',
     public: {
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL || '',
       supabaseAnonKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY || '',
