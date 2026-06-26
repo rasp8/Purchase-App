@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { useKitchenStore, UNIT_OPTIONS, UNIT_CONVERSIONS, convertQty } from '~/composables/useKitchenStore'
+import { storeToRefs } from 'pinia'
+import { usePurchasesStore } from '~/stores/purchases'
+import { UNIT_OPTIONS, UNIT_CONVERSIONS, convertQty } from '~/composables/usePurchaseUnits'
 
 useHead({ title: 'Products | Kitchen App' })
 
@@ -10,8 +12,9 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
-const { items } = useKitchenStore()
-const { loadItems } = useKitchenStore()
+const purchasesStore = usePurchasesStore()
+const { items } = storeToRefs(purchasesStore)
+const { loadPurchases } = purchasesStore
 
 const selectedProduct = ref<string>('')
 const historyRange = ref<HistoryRange>('all')
@@ -218,7 +221,7 @@ watch(selectedProduct, (name) => {
 
 onMounted(async () => {
   try {
-    await loadItems()
+    await loadPurchases()
   } catch (error) {
     console.warn('Failed to load product history:', error)
   }

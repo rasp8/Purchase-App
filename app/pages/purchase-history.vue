@@ -1,13 +1,15 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { getSession, isSupabaseConfigured } from '~/composables/supabase'
 import { useSignOut } from '~/composables/useSignOut'
-import { useKitchenStore } from '~/composables/useKitchenStore'
-import type { KitchenItem, KitchenItemInput } from '~/composables/useKitchenStore'
+import { usePurchasesStore } from '~/stores/purchases'
+import type { PurchaseItem, PurchaseItemInput } from '~/types/purchase'
 
-type HomepageItem = KitchenItem
+definePageMeta({ alias: ['/home'] })
 
-type HomepageDraftRow = {
-  id: number
+type PurchaseHistoryItem = PurchaseItem
+
+type PurchaseForm = {
   productName: string
   quantity: string
   unit: string
@@ -16,7 +18,11 @@ type HomepageDraftRow = {
   notes: string
 }
 
-useHead({ title: 'Purchase History | Kitchen App' })
+type PurchaseDraftRow = PurchaseForm & {
+  id: number
+}
+
+useHead({ title: 'Purchase History | Purchase App' })
 
 const { handleSignOut } = useSignOut()
 const supabaseReady = computed(() => isSupabaseConfigured())
@@ -26,48 +32,80 @@ const showEditModal = ref(false)
 const editingItemId = ref<string | null>(null)
 const toast = useToast()
 
+const purchasesStore = usePurchasesStore()
+const { items: homepageItems, isLoading: itemsLoading } = storeToRefs(purchasesStore)
 const {
-  items: homepageItems,
-  isLoading: itemsLoading,
-  loadItems,
-  createItems,
-  updateItem,
-  deleteItem: deleteItemRequest,
-} = useKitchenStore()
+  loadPurchases,
+  createPurchases,
+  updatePurchase,
+  deletePurchase: deletePurchaseRequest,
+} = purchasesStore
 
-/** Unique product names already entered, for autocomplete suggestions. */
-const uniqueProductNames = computed(() => {
-  const names = new Set<string>()
-  for (const item of homepageItems.value)
-    if (item.productName.trim()) names.add(item.productName.trim())
-  return [...names].sort((a, b) => a.localeCompare(b))
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+const purchaseDateFormatter = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
 })
-
-function createDraftRow(): HomepageDraftRow {
-  return {
-    id: Date.now() + Math.floor(Math.random() * 1000),
-    productName: '',
-    quantity: '',
-    unit: 'each',
-    price: '',
-    purchaseDate: '',
-    notes: '',
-  }
-}
-
-const draftRows = ref<HomepageDraftRow[]>([createDraftRow()])
-const editForm = reactive({
+const purchaseFormDefaults: PurchaseForm = {
   productName: '',
   quantity: '',
   unit: 'each',
   price: '',
   purchaseDate: '',
   notes: '',
+}
+
+/** Unique product names already entered, for autocomplete suggestions. */
+const uniqueProductNames = computed(() => {
+  return [...new Set(
+    homepageItems.value
+      .map(item => item.productName.trim())
+      .filter(Boolean),
+  )].sort((a, b) => a.localeCompare(b))
 })
+
+function createPurchaseForm(): PurchaseForm {
+  return { ...purchaseFormDefaults }
+}
+
+function createDraftRow(): PurchaseDraftRow {
+  return {
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    ...createPurchaseForm(),
+  }
+}
+
+function isFilledPurchaseRow(row: PurchaseForm) {
+  return [row.productName, row.quantity, row.purchaseDate].some(value => value.trim().length > 0)
+}
+
+function toPurchaseInput(form: PurchaseForm): PurchaseItemInput {
+  return {
+    productName: form.productName.trim(),
+    quantity: String(form.quantity).trim() || '-',
+    unit: form.unit || 'each',
+    price: String(form.price).trim(),
+    purchaseDate: form.purchaseDate || '',
+    notes: form.notes.trim() || undefined,
+  }
+}
+
+function populatePurchaseForm(form: PurchaseForm, item: PurchaseHistoryItem) {
+  Object.assign(form, {
+    productName: item.productName,
+    quantity: item.quantity,
+    unit: item.unit || 'each',
+    price: item.price,
+    purchaseDate: item.purchaseDate,
+    notes: item.notes || '',
+  })
+}
+
+const draftRows = ref<PurchaseDraftRow[]>([createDraftRow()])
+const editForm = reactive<PurchaseForm>(createPurchaseForm())
 const validDraftRows = computed(() =>
-  draftRows.value.filter(row =>
-    [row.productName, row.quantity, row.purchaseDate].some(value => value.trim().length > 0),
-  ),
+  draftRows.value.filter(isFilledPurchaseRow),
 )
 const canAddItem = computed(() =>
   validDraftRows.value.some(row => row.productName.trim().length > 0),
@@ -78,29 +116,29 @@ const canSaveEdit = computed(() => editForm.productName.trim().length > 0)
 
 /** All entries grouped by normalised product name. */
 const productPurchaseHistory = computed(() => {
-  const map = new Map<string, HomepageItem[]>()
-  for (const item of homepageItems.value) {
+  return homepageItems.value.reduce((map, item) => {
     const key = item.productName.trim().toLowerCase()
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(item)
-  }
-  return map
+    const group = map.get(key)
+    if (group) group.push(item)
+    else map.set(key, [item])
+    return map
+  }, new Map<string, PurchaseHistoryItem[]>())
 })
 
 function formatPrice(value: string | number | null) {
   if (value === null || value === undefined || value === '') return '—'
   const num = typeof value === 'string' ? parseFloat(value) : value
   if (isNaN(num)) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num)
+  return currencyFormatter.format(num)
 }
 
-function purchaseCount(item: HomepageItem) {
+function purchaseCount(item: PurchaseHistoryItem) {
   const key = item.productName.trim().toLowerCase()
   return productPurchaseHistory.value.get(key)?.length ?? 1
 }
 
 const quickStats = computed(() => [
-  { label: 'Products on homepage', value: homepageItems.value.length.toString() },
+  { label: 'Products on page', value: String(homepageItems.value.length) },
   { label: 'Signed-in state', value: sessionEmail.value ? 'Active' : 'Guest' },
   { label: 'Supabase', value: supabaseReady.value ? 'Connected' : 'Pending' },
 ])
@@ -113,7 +151,7 @@ onMounted(async () => {
     sessionEmail.value = session?.user?.email ?? null
 
     if (session) {
-      await loadItems()
+      await loadPurchases()
     }
   } catch (error) {
     console.warn('Failed to initialize purchase history:', error)
@@ -136,12 +174,7 @@ function closeAddModal() {
 function resetEditForm() {
   editingItemId.value = null
   showEditModal.value = false
-  editForm.productName = ''
-  editForm.quantity = ''
-  editForm.unit = 'each'
-  editForm.price = ''
-  editForm.purchaseDate = ''
-  editForm.notes = ''
+  Object.assign(editForm, createPurchaseForm())
 }
 
 function closeEditModal() {
@@ -164,27 +197,18 @@ function removeDraftRow(id: number) {
 function formatPurchaseDate(value: string) {
   if (!value) return '-'
 
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(`${value}T00:00:00`))
+  return purchaseDateFormatter.format(new Date(`${value}T00:00:00`))
 }
 
-function openEditModal(item: HomepageItem) {
+function openEditModal(item: PurchaseHistoryItem) {
   editingItemId.value = item.id
-  editForm.productName = item.productName
-  editForm.quantity = item.quantity
-  editForm.unit = item.unit || 'each'
-  editForm.price = item.price
-  editForm.purchaseDate = item.purchaseDate
-  editForm.notes = item.notes || ''
+  populatePurchaseForm(editForm, item)
   showEditModal.value = true
 }
 
 async function deleteItem(id: string) {
   try {
-    await deleteItemRequest(id)
+    await deletePurchaseRequest(id)
   } catch (error) {
     toast.add({
       title: 'Unable to delete item',
@@ -197,7 +221,7 @@ async function deleteItem(id: string) {
 async function saveEditedItem() {
   if (!editingItemId.value || !canSaveEdit.value) return
 
-  const payload: KitchenItemInput = {
+  const payload: PurchaseItemInput = {
     productName: editForm.productName.trim(),
     quantity: String(editForm.quantity).trim() || '-',
     unit: editForm.unit,
@@ -207,7 +231,7 @@ async function saveEditedItem() {
   }
 
   try {
-    await updateItem(editingItemId.value, payload)
+    await updatePurchase(editingItemId.value, payload)
     resetEditForm()
   } catch (error) {
     toast.add({
@@ -221,19 +245,12 @@ async function saveEditedItem() {
 async function handleAddItem() {
   if (!canAddItem.value) return
 
-  const rowsToAdd: KitchenItemInput[] = validDraftRows.value
+  const rowsToAdd: PurchaseItemInput[] = validDraftRows.value
     .filter(row => row.productName.trim().length > 0)
-    .map(row => ({
-      productName: row.productName.trim(),
-      quantity: String(row.quantity).trim() || '-',
-      unit: row.unit || 'each',
-      price: String(row.price).trim(),
-      purchaseDate: row.purchaseDate || '',
-      notes: row.notes.trim() || undefined,
-    }))
+    .map(toPurchaseInput)
 
   try {
-    await createItems(rowsToAdd)
+    await createPurchases(rowsToAdd)
     closeAddModal()
   } catch (error) {
     toast.add({
@@ -375,7 +392,7 @@ async function handleAddItem() {
       v-model:open="showAddModal"
       title="Add product entries"
       description="Fill in the table rows below. Product IDs are assigned automatically when you save."
-      :content="{ class: 'sm:max-w-5xl' }"
+      content-class="sm:max-w-5xl"
       @update:open="value => !value && closeAddModal()"
     >
       <template #body>
@@ -453,7 +470,7 @@ async function handleAddItem() {
       v-model:open="showEditModal"
       title="Edit product entry"
       description="Update the details for this purchase record."
-      :content="{ class: 'sm:max-w-lg' }"
+      class="sm:max-w-lg"
       @update:open="value => !value && closeEditModal()"
     >
       <template #body>

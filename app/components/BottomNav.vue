@@ -15,5 +15,5 @@
 </template>
 
 <script setup lang="ts">
-const navigation = [{ label: 'Purchase History', to: '/home' }, { label: 'Products', to: '/products' }, { label: 'Shopping List', to: '/shopping-list' }]
+const navigation = [{ label: 'Purchase History', to: '/purchase-history' }, { label: 'Products', to: '/products' }, { label: 'Shopping List', to: '/shopping-list' }]
 </script>

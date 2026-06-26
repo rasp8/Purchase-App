@@ -17,7 +17,7 @@ onMounted(async () => {
 
   const session = await getSession()
   if (session) {
-    await navigateTo('/home')
+    await navigateTo('/purchase-history')
   }
 })
 
@@ -65,7 +65,7 @@ async function handleVerificationCode() {
   const result = await validateCode(email.value, pinCode)
 
   if (result.session) {
-    await navigateTo('/home')
+    await navigateTo('/purchase-history')
     return
   }
 

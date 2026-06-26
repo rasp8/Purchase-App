@@ -1,0 +1,71 @@
+import { defineStore } from 'pinia'
+import type { PurchaseItem, PurchaseItemInput } from '~/types/purchase'
+import { usePurchasesApi } from '~/composables/api/usePurchasesApi'
+
+export const usePurchasesStore = defineStore('purchases', () => {
+  const items = ref<PurchaseItem[]>([])
+  const isLoaded = ref(false)
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+
+  async function loadPurchases(force = false) {
+    if (isLoading.value) return items.value
+    if (isLoaded.value && !force) return items.value
+
+    const { listPurchases } = usePurchasesApi()
+
+    isLoading.value = true
+    try {
+      items.value = await listPurchases()
+      isLoaded.value = true
+      error.value = null
+      return items.value
+    } catch (caughtError) {
+      error.value = caughtError instanceof Error ? caughtError.message : 'Failed to load purchases.'
+      throw caughtError
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function createPurchases(payload: PurchaseItemInput[]) {
+    const { createPurchases: createPurchasesRequest } = usePurchasesApi()
+    const createdPurchases = await createPurchasesRequest(payload)
+    items.value = [...createdPurchases, ...items.value.filter(existing => !createdPurchases.some(item => item.id === existing.id))]
+    isLoaded.value = true
+    error.value = null
+    return createdPurchases
+  }
+
+  async function updatePurchase(id: string, payload: PurchaseItemInput) {
+    const { updatePurchase: updatePurchaseRequest } = usePurchasesApi()
+    const updatedPurchase = await updatePurchaseRequest(id, payload)
+    const itemIndex = items.value.findIndex(item => item.id === id)
+
+    if (itemIndex === -1) {
+      items.value = [updatedPurchase, ...items.value]
+    } else {
+      items.value[itemIndex] = updatedPurchase
+      items.value = [...items.value]
+    }
+
+    error.value = null
+    return updatedPurchase
+  }
+
+  async function deletePurchase(id: string) {
+    const { deletePurchase: deletePurchaseRequest } = usePurchasesApi()
+    await deletePurchaseRequest(id)
+    items.value = items.value.filter(item => item.id !== id)
+    error.value = null
+  }
+
+  function reset() {
+    items.value = []
+    isLoaded.value = false
+    isLoading.value = false
+    error.value = null
+  }
+
+  return { items, isLoaded, isLoading, error, loadPurchases, createPurchases, updatePurchase, deletePurchase, reset }
+})

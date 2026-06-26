@@ -52,7 +52,7 @@ export function normalizeItemInput(input: ItemInput) {
   }
 }
 
-export function toKitchenItem(row: ItemRow) {
+export function toPurchaseItem(row: ItemRow) {
   return {
     id: row.id,
     productName: row.product_name,

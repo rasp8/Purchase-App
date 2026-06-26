@@ -1,5 +1,5 @@
 import { getSession, isSupabaseConfigured } from '~/composables/supabase'
-import { useKitchenStore } from '~/composables/useKitchenStore'
+import { usePurchasesStore } from '~/stores/purchases'
 import { useProfileStore } from '~/stores/profile'
 
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -8,12 +8,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   const profileStore = useProfileStore()
-  const kitchenStore = useKitchenStore()
+  const purchasesStore = usePurchasesStore()
 
   if (!isSupabaseConfigured()) {
     if (to.path !== '/') {
       profileStore.clear()
-      kitchenStore.reset()
+      purchasesStore.reset()
       return navigateTo('/')
     }
     return
@@ -24,12 +24,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     if (!session && to.path !== '/') {
       profileStore.clear()
-      kitchenStore.reset()
+      purchasesStore.reset()
       return navigateTo('/')
     }
 
     if (session && to.path === '/') {
-      return navigateTo('/home')
+      return navigateTo('/purchase-history')
     }
 
     if (session && !profileStore.isReady) {
@@ -38,7 +38,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   } catch (error) {
     console.warn('Auth check failed:', error)
     profileStore.clear()
-    kitchenStore.reset()
+    purchasesStore.reset()
     if (to.path !== '/') {
       return navigateTo('/')
     }
