@@ -29,7 +29,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
     if (session && to.path === '/') {
-      return navigateTo('/home')
+      return navigateTo('/purchase-history')
     }
 
     if (session && !profileStore.isReady) {

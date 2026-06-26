@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 const navigation = [
-  { label: 'Purchase History', to: '/home' },
+  { label: 'Purchase History', to: '/purchase-history' },
   { label: 'Products', to: '/products' },
   { label: 'Shopping List', to: '/shopping-list' },
 ]
