@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import {
-  useKitchenStore,
-  UNIT_OPTIONS,
-  UNIT_CONVERSIONS,
-} from '~/composables/useKitchenStore'
+import { storeToRefs } from 'pinia'
+import { usePurchasesStore } from '~/stores/purchases'
+import { UNIT_OPTIONS, UNIT_CONVERSIONS } from '~/composables/usePurchaseUnits'
 
 useHead({ title: 'Shopping List | Kitchen App' })
 
-const { items, loadItems, createItems } = useKitchenStore()
+const purchasesStore = usePurchasesStore()
+const { items } = storeToRefs(purchasesStore)
+const { loadPurchases, createPurchases } = purchasesStore
 
 // ── types ─────────────────────────────────────────────────────────────────────
 
@@ -98,7 +98,7 @@ async function onRowChecked(row: ShoppingRow, checked: boolean) {
   }
 
   try {
-    await createItems([newEntry])
+    await createPurchases([newEntry])
     toast.add({ title: `✓ "${newEntry.productName}" added to purchase list`, color: 'success', duration: 4000 })
   } catch (error) {
     row.checked = false
@@ -147,7 +147,7 @@ function fmt(v: number | null): string {
 
 onMounted(async () => {
   try {
-    await loadItems()
+    await loadPurchases()
   } catch (error) {
     console.warn('Failed to load shopping history:', error)
   }

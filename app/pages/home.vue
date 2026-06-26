@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { getSession, isSupabaseConfigured } from '~/composables/supabase'
 import { useSignOut } from '~/composables/useSignOut'
-import { useKitchenStore } from '~/composables/useKitchenStore'
-import type { KitchenItem, KitchenItemInput } from '~/composables/useKitchenStore'
+import { usePurchasesStore } from '~/stores/purchases'
+import type { PurchaseItem, PurchaseItemInput } from '~/types/purchase'
 
-type HomepageItem = KitchenItem
+type HomepageItem = PurchaseItem
 
 type HomepageDraftRow = {
   id: number
@@ -26,14 +27,14 @@ const showEditModal = ref(false)
 const editingItemId = ref<string | null>(null)
 const toast = useToast()
 
+const purchasesStore = usePurchasesStore()
+const { items: homepageItems, isLoading: itemsLoading } = storeToRefs(purchasesStore)
 const {
-  items: homepageItems,
-  isLoading: itemsLoading,
-  loadItems,
-  createItems,
-  updateItem,
-  deleteItem: deleteItemRequest,
-} = useKitchenStore()
+  loadPurchases,
+  createPurchases,
+  updatePurchase,
+  deletePurchase: deletePurchaseRequest,
+} = purchasesStore
 
 /** Unique product names already entered, for autocomplete suggestions. */
 const uniqueProductNames = computed(() => {
@@ -113,7 +114,7 @@ onMounted(async () => {
     sessionEmail.value = session?.user?.email ?? null
 
     if (session) {
-      await loadItems()
+      await loadPurchases()
     }
   } catch (error) {
     console.warn('Failed to initialize purchase history:', error)
@@ -184,7 +185,7 @@ function openEditModal(item: HomepageItem) {
 
 async function deleteItem(id: string) {
   try {
-    await deleteItemRequest(id)
+    await deletePurchaseRequest(id)
   } catch (error) {
     toast.add({
       title: 'Unable to delete item',
@@ -197,7 +198,7 @@ async function deleteItem(id: string) {
 async function saveEditedItem() {
   if (!editingItemId.value || !canSaveEdit.value) return
 
-  const payload: KitchenItemInput = {
+  const payload: PurchaseItemInput = {
     productName: editForm.productName.trim(),
     quantity: String(editForm.quantity).trim() || '-',
     unit: editForm.unit,
@@ -207,7 +208,7 @@ async function saveEditedItem() {
   }
 
   try {
-    await updateItem(editingItemId.value, payload)
+    await updatePurchase(editingItemId.value, payload)
     resetEditForm()
   } catch (error) {
     toast.add({
@@ -221,7 +222,7 @@ async function saveEditedItem() {
 async function handleAddItem() {
   if (!canAddItem.value) return
 
-  const rowsToAdd: KitchenItemInput[] = validDraftRows.value
+  const rowsToAdd: PurchaseItemInput[] = validDraftRows.value
     .filter(row => row.productName.trim().length > 0)
     .map(row => ({
       productName: row.productName.trim(),
@@ -233,7 +234,7 @@ async function handleAddItem() {
     }))
 
   try {
-    await createItems(rowsToAdd)
+    await createPurchases(rowsToAdd)
     closeAddModal()
   } catch (error) {
     toast.add({

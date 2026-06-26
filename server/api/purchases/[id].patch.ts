@@ -49,5 +49,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: 'Item not found.' })
   }
 
-  return toKitchenItem(data)
+  return toPurchaseItem(data)
 })

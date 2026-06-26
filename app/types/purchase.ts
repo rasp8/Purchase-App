@@ -1,4 +1,4 @@
-export type KitchenItem = {
+export type PurchaseItem = {
   id: string
   productName: string
   quantity: string
@@ -8,7 +8,7 @@ export type KitchenItem = {
   notes?: string
 }
 
-export type KitchenItemInput = Omit<KitchenItem, 'id'>
+export type PurchaseItemInput = Omit<PurchaseItem, 'id'>
 
 export type PurchaseAppProfile = {
   id: string
