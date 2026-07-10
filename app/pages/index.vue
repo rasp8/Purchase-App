@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getSession, isSupabaseConfigured, validateCode } from '~/composables/supabase'
+import { getSession, validateCode } from '~/composables/supabase'
 
 useHead({ title: 'Login | Purchase App' })
 
@@ -10,10 +10,7 @@ const codeRequested = ref(false)
 const statusMessage = ref('')
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-const supabaseReady = computed(() => isSupabaseConfigured())
-
 onMounted(async () => {
-  if (!supabaseReady.value) return
 
   const session = await getSession()
   if (session) {
@@ -26,11 +23,6 @@ async function handleSendVerificationCode() {
 
   if (!emailPattern.test(normalizedEmail)) {
     statusMessage.value = 'Please enter a valid email address.'
-    return
-  }
-
-  if (!supabaseReady.value) {
-    statusMessage.value = 'Supabase is not configured yet. Add the environment variables to enable login.'
     return
   }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { getSession, isSupabaseConfigured } from '~/composables/supabase'
+import { getSession } from '~/composables/supabase'
 import { useSignOut } from '~/composables/useSignOut'
 import { usePurchasesStore } from '~/stores/purchases'
 import type { PurchaseItem, PurchaseItemInput } from '~/types/purchase'
@@ -25,7 +25,6 @@ type PurchaseDraftRow = PurchaseForm & {
 useHead({ title: 'Purchase History | Purchase App' })
 
 const { handleSignOut } = useSignOut()
-const supabaseReady = computed(() => isSupabaseConfigured())
 const sessionEmail = ref<string | null>(null)
 const showAddModal = ref(false)
 const showEditModal = ref(false)
@@ -140,12 +139,10 @@ function purchaseCount(item: PurchaseHistoryItem) {
 const quickStats = computed(() => [
   { label: 'Products on page', value: String(homepageItems.value.length) },
   { label: 'Signed-in state', value: sessionEmail.value ? 'Active' : 'Guest' },
-  { label: 'Supabase', value: supabaseReady.value ? 'Connected' : 'Pending' },
+  { label: 'Supabase', value: 'Connected' },
 ])
 
 onMounted(async () => {
-  if (!supabaseReady.value) return
-
   try {
     const session = await getSession()
     sessionEmail.value = session?.user?.email ?? null
