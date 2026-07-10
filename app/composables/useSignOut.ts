@@ -1,4 +1,4 @@
-import { signOut } from '~/composables/supabase'
+import { signOut } from '~/composables/supabase/auth'
 import { usePurchasesStore } from '~/stores/purchases'
 import { useProfileStore } from '~/stores/profile'
 

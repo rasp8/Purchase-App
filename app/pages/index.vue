@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getSession, validateCode } from '~/composables/supabase'
+import { getSession, validateCode } from '~/composables/supabase/auth'
 
 useHead({ title: 'Login | Purchase App' })
 

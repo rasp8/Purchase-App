@@ -1,4 +1,4 @@
-import { getSession } from '~/composables/supabase'
+import { getSession } from '~/composables/supabase/auth'
 import { usePurchasesStore } from '~/stores/purchases'
 import { useProfileStore } from '~/stores/profile'
 

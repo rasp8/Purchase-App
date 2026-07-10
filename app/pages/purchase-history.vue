@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { getSession } from '~/composables/supabase'
+import { getSession } from '~/composables/supabase/auth'
 import { useSignOut } from '~/composables/useSignOut'
 import { usePurchasesStore } from '~/stores/purchases'
 import type { PurchaseItem, PurchaseItemInput } from '~/types/purchase'
