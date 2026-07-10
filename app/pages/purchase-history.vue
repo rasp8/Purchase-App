@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { getSession } from '~/composables/supabase/auth'
 import { useSignOut } from '~/composables/useSignOut'
 import { usePurchasesStore } from '~/stores/purchases'
 import type { PurchaseItem, PurchaseItemInput } from '~/types/purchase'
@@ -25,7 +24,6 @@ type PurchaseDraftRow = PurchaseForm & {
 useHead({ title: 'Purchase History | Purchase App' })
 
 const { handleSignOut } = useSignOut()
-const sessionEmail = ref<string | null>(null)
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const editingItemId = ref<string | null>(null)
@@ -138,18 +136,13 @@ function purchaseCount(item: PurchaseHistoryItem) {
 
 const quickStats = computed(() => [
   { label: 'Products on page', value: String(homepageItems.value.length) },
-  { label: 'Signed-in state', value: sessionEmail.value ? 'Active' : 'Guest' },
+  { label: 'Signed-in state', value: 'Active'},
   { label: 'Supabase', value: 'Connected' },
 ])
 
 onMounted(async () => {
   try {
-    const session = await getSession()
-    sessionEmail.value = session?.user?.email ?? null
-
-    if (session) {
       await loadPurchases()
-    }
   } catch (error) {
     console.warn('Failed to initialize purchase history:', error)
   }
@@ -281,7 +274,6 @@ async function handleAddItem() {
             Add item
           </UButton>
           <UButton
-            v-if="sessionEmail"
             color="neutral"
             variant="ghost"
             @click="handleSignOut"

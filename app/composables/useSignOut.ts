@@ -1,6 +1,13 @@
-import { signOut } from '~/composables/supabase/auth'
+import { getSupabase } from '~/composables/supabase/client'
 import { usePurchasesStore } from '~/stores/purchases'
 import { useProfileStore } from '~/stores/profile'
+
+async function signOut() {
+  const supabase = getSupabase()
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
+  await navigateTo('/')
+}
 
 export function useSignOut() {
   async function handleSignOut() {

@@ -1,5 +1,5 @@
 <script setup>
-import { getSession, validateCode } from '~/composables/supabase/auth'
+import { getSupabase } from '~/composables/supabase/client'
 
 useHead({ title: 'Login | Purchase App' })
 
@@ -11,8 +11,10 @@ const statusMessage = ref('')
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 onMounted(async () => {
-
-  const session = await getSession()
+  const supabase = getSupabase()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   if (session) {
     await navigateTo('/purchase-history')
   }
@@ -49,6 +51,31 @@ watch(pin, async (newPin) => {
     await handleVerificationCode()
   }
 })
+
+async function validateCode(email, code) {
+  if (!email || !code) {
+    return { session: null, error: new Error('Email and verification code are required.') }
+  }
+
+  try {
+    const supabase = getSupabase()
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: 'email',
+    })
+
+    return { session, error }
+  } catch (error) {
+    return {
+      session: null,
+      error: error instanceof Error ? error : new Error('Invalid code or authentication error.'),
+    }
+  }
+}
 
 async function handleVerificationCode() {
   const pinCode = Array.isArray(pin.value) ? pin.value.join('') : pin.value
