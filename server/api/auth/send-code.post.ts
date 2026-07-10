@@ -13,31 +13,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig()
-
-  if (!config.public.supabaseUrl || !config.supabaseServiceRoleKey) {
-    throw createError({ statusCode: 500, message: 'Supabase server auth config is missing.' })
-  }
-
   const supabase = createClient(config.public.supabaseUrl, config.supabaseServiceRoleKey)
-  const { data: authorized, error: authorizationError } = await supabase.rpc('is_authorized_email', {
+
+  const { data: authorized } = await supabase.rpc('is_authorized_email', {
     email_to_check: normalizedEmail,
   })
 
-  if (authorizationError) {
-    const isMissingAuthFunction = authorizationError.message.includes('is_authorized_email')
-    const hint = isMissingAuthFunction
-      ? ' Apply the Purchase-App migration to the same Supabase project or run `npx supabase db reset` for local development.'
-      : ' Make sure the app is pointed at the same Supabase project that has the Purchase-App migration and seed data applied.'
-
-    throw createError({
-      statusCode: 500,
-      message: `Authorization check failed: ${authorizationError.message}.${hint}`,
-    })
-  }
-
-  if (!authorized) {
-    throw createError({ statusCode: 403, message: 'This email is not authorized to access Purchase-App.' })
-  }
+  if (!authorized) throw createError({ statusCode: 403, message: 'This email is not authorized.' })
+  
 
   const { error } = await supabase.auth.signInWithOtp({
     email: normalizedEmail,
@@ -54,3 +37,4 @@ export default defineEventHandler(async (event) => {
 
   return { success: true }
 })
+ 

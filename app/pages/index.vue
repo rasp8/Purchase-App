@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import { getSession, validateCode } from '~/composables/supabase/auth'
 
 useHead({ title: 'Login | Purchase App' })
@@ -37,8 +37,7 @@ async function handleSendVerificationCode() {
     codeRequested.value = true
     statusMessage.value = 'Verification code sent. Check your email.'
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to send a verification code right now.'
-    statusMessage.value = message
+    statusMessage.value = error?.data?.message || 'Unable to send a verification code right now.'
   } finally {
     loading.value = false
   }
