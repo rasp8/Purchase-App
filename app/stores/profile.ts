@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { PurchaseAppProfile } from '~/types/purchase'
-import { getSupabase } from '~/composables/supabase/client'
+import { getSupabase } from '~/composables/useSupabase'
 import { apiFetch } from '~/composables/useApiToken'
 
 export const useProfileStore = defineStore('profile', () => {

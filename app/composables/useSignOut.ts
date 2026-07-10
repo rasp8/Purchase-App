@@ -1,4 +1,4 @@
-import { getSupabase } from '~/composables/supabase/client'
+import { getSupabase } from '~/composables/useSupabase'
 import { usePurchasesStore } from '~/stores/purchases'
 import { useProfileStore } from '~/stores/profile'
 

@@ -1,5 +1,5 @@
 <script setup>
-import { getSupabase } from '~/composables/supabase/client'
+import { getSupabase } from '~/composables/useSupabase'
 
 useHead({ title: 'Login | Purchase App' })
 
