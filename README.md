@@ -27,7 +27,7 @@ npm run dev
 For a single app runner entrypoint, you can also use:
 
 ```powershell
-.\run-app.ps1 -Mode cloud
+.\run-app.ps1
 ```
 
 ## Build
@@ -40,10 +40,9 @@ npm run build
 
 | Mode | Command | Supabase target | Config source |
 | --- | --- | --- | --- |
-| Hosted/default | `npm run app:cloud` or `.\run-app.ps1 -Mode cloud` | Hosted Purchase-App project | `.env` |
-| Local Docker | `npm run app:local` or `.\run-app.ps1 -Mode local` | Local Supabase | generated `.env.docker` |
+| Local Docker | `npm run app:local` or `.\run-app.ps1` | Local Supabase | generated `.env.docker` |
 
-`npm run dev` still works for the hosted/default path. `.\dev.ps1` is still available as a backward-compatible alias for local mode.
+`npm run dev` still works for the hosted/default path.
 
 After local mode has generated `.env.docker`, you can also run `docker compose up --build` directly to restart just the app container against the same local Supabase stack.
 
@@ -97,7 +96,7 @@ NUXT_PUBLIC_SUPABASE_ANON_KEY=<local publishable/anon key>
 NUXT_SUPABASE_SERVICE_ROLE_KEY=<local secret/service-role key>
 ```
 
-If a developer is on a different machine or your LAN IP changes, both `run-app.ps1` and `dev.ps1` accept `-PublicHost <ip>` to override the default `192.168.1.59`.
+If a developer is on a different machine or your LAN IP changes, `run-app.ps1` accepts `-PublicHost <ip>` to override the default `192.168.1.59`.
 
 If `NUXT_PUBLIC_SUPABASE_URL` still looks like `https://<project-ref>.supabase.co`, the app is still using a hosted project and the local seeded account (`test@app.local`) will not exist there unless you created it separately.
 
@@ -124,7 +123,7 @@ Purchase-App is intended to use its own hosted Supabase project.
 For the hosted/default path, keep `.env` pointed at the hosted project and run:
 
 ```bash
-npm run app:cloud
+npm run dev
 ```
 
 You can also use `npm run dev` or `.\run-app.ps1 -Mode cloud`.
