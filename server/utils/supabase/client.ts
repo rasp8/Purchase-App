@@ -6,9 +6,6 @@ export function useUserSupabase(event: H3Event) {
   const authorization = getHeader(event, 'authorization') ?? ''
   const token = authorization.replace(/^Bearer\s+/i, '')
 
-  if (!config.public.supabaseUrl || !config.public.supabaseAnonKey) {
-    throw createError({ statusCode: 500, message: 'Supabase public runtime config is missing.' })
-  }
 
   return createClient(config.public.supabaseUrl, config.public.supabaseAnonKey, {
     global: {

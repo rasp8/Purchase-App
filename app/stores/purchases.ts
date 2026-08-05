@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { PurchaseItem, PurchaseItemInput } from '~/types/purchase'
-import { usePurchasesApi } from '~/composables/api/usePurchasesApi'
+import { apiFetch } from '~/composables/useApiToken'
 
 export const usePurchasesStore = defineStore('purchases', () => {
   const items = ref<PurchaseItem[]>([])
@@ -8,11 +8,33 @@ export const usePurchasesStore = defineStore('purchases', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  function listPurchases() {
+    return apiFetch<PurchaseItem[]>('/api/purchases')
+  }
+
+  function createPurchasesRequest(items: PurchaseItemInput[]) {
+    return apiFetch<PurchaseItem[]>('/api/purchases', {
+      method: 'POST',
+      body: { items },
+    })
+  }
+
+  function updatePurchaseRequest(id: string, item: PurchaseItemInput) {
+    return apiFetch<PurchaseItem>(`/api/purchases/${id}`, {
+      method: 'PATCH',
+      body: item,
+    })
+  }
+
+  function deletePurchaseRequest(id: string) {
+    return apiFetch<{ success: true }>(`/api/purchases/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   async function loadPurchases(force = false) {
     if (isLoading.value) return items.value
     if (isLoaded.value && !force) return items.value
-
-    const { listPurchases } = usePurchasesApi()
 
     isLoading.value = true
     try {
@@ -29,7 +51,6 @@ export const usePurchasesStore = defineStore('purchases', () => {
   }
 
   async function createPurchases(payload: PurchaseItemInput[]) {
-    const { createPurchases: createPurchasesRequest } = usePurchasesApi()
     const createdPurchases = await createPurchasesRequest(payload)
     items.value = [...createdPurchases, ...items.value.filter(existing => !createdPurchases.some(item => item.id === existing.id))]
     isLoaded.value = true
@@ -38,7 +59,6 @@ export const usePurchasesStore = defineStore('purchases', () => {
   }
 
   async function updatePurchase(id: string, payload: PurchaseItemInput) {
-    const { updatePurchase: updatePurchaseRequest } = usePurchasesApi()
     const updatedPurchase = await updatePurchaseRequest(id, payload)
     const itemIndex = items.value.findIndex(item => item.id === id)
 
@@ -54,7 +74,6 @@ export const usePurchasesStore = defineStore('purchases', () => {
   }
 
   async function deletePurchase(id: string) {
-    const { deletePurchase: deletePurchaseRequest } = usePurchasesApi()
     await deletePurchaseRequest(id)
     items.value = items.value.filter(item => item.id !== id)
     error.value = null

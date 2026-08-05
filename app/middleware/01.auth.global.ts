@@ -1,4 +1,4 @@
-import { getSession, isSupabaseConfigured } from '~/composables/supabase'
+import { getSupabase } from '~/composables/useSupabase'
 import { usePurchasesStore } from '~/stores/purchases'
 import { useProfileStore } from '~/stores/profile'
 
@@ -10,17 +10,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const profileStore = useProfileStore()
   const purchasesStore = usePurchasesStore()
 
-  if (!isSupabaseConfigured()) {
-    if (to.path !== '/') {
-      profileStore.clear()
-      purchasesStore.reset()
-      return navigateTo('/')
-    }
-    return
-  }
-
   try {
-    const session = await getSession()
+    const supabase = getSupabase()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
     if (!session && to.path !== '/') {
       profileStore.clear()

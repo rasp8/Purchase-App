@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { getSession, isSupabaseConfigured, validateCode } from '~/composables/supabase'
+<script setup>
+import { getSupabase } from '~/composables/useSupabase'
 
 useHead({ title: 'Login | Purchase App' })
 
@@ -10,12 +10,11 @@ const codeRequested = ref(false)
 const statusMessage = ref('')
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-const supabaseReady = computed(() => isSupabaseConfigured())
-
 onMounted(async () => {
-  if (!supabaseReady.value) return
-
-  const session = await getSession()
+  const supabase = getSupabase()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   if (session) {
     await navigateTo('/purchase-history')
   }
@@ -26,11 +25,6 @@ async function handleSendVerificationCode() {
 
   if (!emailPattern.test(normalizedEmail)) {
     statusMessage.value = 'Please enter a valid email address.'
-    return
-  }
-
-  if (!supabaseReady.value) {
-    statusMessage.value = 'Supabase is not configured yet. Add the environment variables to enable login.'
     return
   }
 
@@ -45,8 +39,7 @@ async function handleSendVerificationCode() {
     codeRequested.value = true
     statusMessage.value = 'Verification code sent. Check your email.'
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to send a verification code right now.'
-    statusMessage.value = message
+    statusMessage.value = error?.data?.message || 'Unable to send a verification code right now.'
   } finally {
     loading.value = false
   }
@@ -58,6 +51,31 @@ watch(pin, async (newPin) => {
     await handleVerificationCode()
   }
 })
+
+async function validateCode(email, code) {
+  if (!email || !code) {
+    return { session: null, error: new Error('Email and verification code are required.') }
+  }
+
+  try {
+    const supabase = getSupabase()
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: 'email',
+    })
+
+    return { session, error }
+  } catch (error) {
+    return {
+      session: null,
+      error: error instanceof Error ? error : new Error('Invalid code or authentication error.'),
+    }
+  }
+}
 
 async function handleVerificationCode() {
   const pinCode = Array.isArray(pin.value) ? pin.value.join('') : pin.value

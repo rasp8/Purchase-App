@@ -1,4 +1,4 @@
-import { getSupabase } from '~/composables/supabase/client'
+import { getSupabase } from '~/composables/useSupabase'
 
 export async function getApiToken(): Promise<string> {
   const supabase = getSupabase()
