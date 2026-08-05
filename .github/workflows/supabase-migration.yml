@@ -1,0 +1,27 @@
+name: Deploy Supabase Migrations
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Clone the repository code into the runner
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Step 2: Use the official Supabase CLI action to run migrations
+      - name: Run Supabase Migrations
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Step 3: Execute the migration command against production
+      - name: Link and Push to Remote DB
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          supabase db push       
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
