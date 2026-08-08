@@ -53,9 +53,9 @@ VALUES (
   now()
 ) ON CONFLICT (user_id) DO NOTHING;
 
-INSERT INTO "purchase-app"."Item" (id, user_id, product_name, quantity, unit, price, purchase_date, notes)
+INSERT INTO "purchase-app"."Item" (id, user_id, product_name, quantity, unit, price, store_name, purchase_date, notes)
 VALUES
-  ('itm-0001', 'b1c2d3e4-1234-5678-abcd-000000000001', 'Tomatoes', '6', 'each', '3.49', '2026-04-22', NULL),
-  ('itm-0002', 'b1c2d3e4-1234-5678-abcd-000000000001', 'Olive oil', '500', 'ml', '8.99', '2026-04-23', NULL),
-  ('itm-0003', 'b1c2d3e4-1234-5678-abcd-000000000001', 'Pasta', '400', 'g', '2.25', '2026-04-24', 'Great pantry backup')
+  ('itm-0001', 'b1c2d3e4-1234-5678-abcd-000000000001', 'Tomatoes', '6', 'each', '3.49', 'FreshCo', '2026-04-22', NULL),
+  ('itm-0002', 'b1c2d3e4-1234-5678-abcd-000000000001', 'Olive oil', '500', 'ml', '8.99', 'Loblaws', '2026-04-23', NULL),
+  ('itm-0003', 'b1c2d3e4-1234-5678-abcd-000000000001', 'Pasta', '400', 'g', '2.25', 'FreshCo', '2026-04-24', 'Great pantry backup')
 ON CONFLICT (id) DO NOTHING;
