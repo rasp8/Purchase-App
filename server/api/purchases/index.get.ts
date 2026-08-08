@@ -1,4 +1,5 @@
 import { toPurchaseItem } from "~~/server/utils/purchase-items"
+import { requireAuth } from "~~/server/utils/supabase/auth"
 
 type ItemRow = {
   id: string
@@ -7,6 +8,7 @@ type ItemRow = {
   quantity: string
   unit: string
   price: string
+  store_name: string | null
   purchase_date: string | null
   notes: string | null
   created_at: string
@@ -18,7 +20,7 @@ export default defineEventHandler(async (event) => {
   const { data, error } = await supabase
     .schema('purchase-app')
     .from('Item')
-    .select('id, user_id, product_name, quantity, unit, price, purchase_date, notes, created_at, updated_at')
+    .select('id, user_id, product_name, quantity, unit, price, store_name, purchase_date, notes, created_at, updated_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .returns<ItemRow[]>()

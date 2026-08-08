@@ -5,6 +5,7 @@ type ItemRow = {
   quantity: string
   unit: string
   price: string
+  store_name: string | null
   purchase_date: string | null
   notes: string | null
   created_at: string
@@ -16,6 +17,7 @@ type ItemInput = {
   quantity?: unknown
   unit?: unknown
   price?: unknown
+  storeName?: unknown
   purchaseDate?: unknown
   notes?: unknown
 }
@@ -40,6 +42,7 @@ export function normalizeItemInput(input: ItemInput) {
   const unit = normalizeString(input.unit) || 'each'
   const quantity = normalizeString(input.quantity) || '-'
   const price = normalizeString(input.price)
+  const storeName = normalizeString(input.storeName)
   const notes = normalizeString(input.notes)
 
   return {
@@ -47,6 +50,7 @@ export function normalizeItemInput(input: ItemInput) {
     quantity,
     unit,
     price,
+    store_name: storeName || null,
     purchase_date: purchaseDate || null,
     notes: notes || null,
   }
@@ -59,6 +63,7 @@ export function toPurchaseItem(row: ItemRow) {
     quantity: row.quantity,
     unit: row.unit,
     price: row.price,
+    storeName: row.store_name ?? undefined,
     purchaseDate: row.purchase_date ?? '',
     notes: row.notes ?? undefined,
   }

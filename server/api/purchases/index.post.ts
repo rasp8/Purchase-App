@@ -7,6 +7,7 @@ type CreateItemsBody = {
     quantity?: unknown
     unit?: unknown
     price?: unknown
+    storeName?: unknown
     purchaseDate?: unknown
     notes?: unknown
   }>
@@ -19,6 +20,7 @@ type ItemRow = {
   quantity: string
   unit: string
   price: string
+  store_name: string | null
   purchase_date: string | null
   notes: string | null
   created_at: string
@@ -43,7 +45,7 @@ export default defineEventHandler(async (event) => {
     .schema('purchase-app')
     .from('Item')
     .insert(rows)
-    .select('id, user_id, product_name, quantity, unit, price, purchase_date, notes, created_at, updated_at')
+    .select('id, user_id, product_name, quantity, unit, price, store_name, purchase_date, notes, created_at, updated_at')
     .returns<ItemRow[]>()
 
   if (error) {

@@ -4,6 +4,7 @@ export type PurchaseItem = {
   quantity: string
   unit: string
   price: string
+  storeName?: string
   purchaseDate: string
   notes?: string
 }

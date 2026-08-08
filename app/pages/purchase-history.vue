@@ -13,6 +13,7 @@ type PurchaseForm = {
   quantity: string
   unit: string
   price: string
+  storeName: string
   purchaseDate: string
   notes: string
 }
@@ -49,6 +50,7 @@ const purchaseFormDefaults: PurchaseForm = {
   quantity: '',
   unit: 'each',
   price: '',
+  storeName: '',
   purchaseDate: '',
   notes: '',
 }
@@ -60,6 +62,16 @@ const uniqueProductNames = computed(() => {
       .map(item => item.productName.trim())
       .filter(Boolean),
   )].sort((a, b) => a.localeCompare(b))
+})
+
+/** Unique store names already entered, for autocomplete suggestions. */
+const uniqueStoreNames = computed(() => {
+  const names = new Map<string, string>()
+  for (const item of homepageItems.value) {
+    const name = item.storeName?.trim()
+    if (name && !names.has(name.toLowerCase())) names.set(name.toLowerCase(), name)
+  }
+  return [...names.values()].sort((a, b) => a.localeCompare(b))
 })
 
 function createPurchaseForm(): PurchaseForm {
@@ -83,6 +95,7 @@ function toPurchaseInput(form: PurchaseForm): PurchaseItemInput {
     quantity: String(form.quantity).trim() || '-',
     unit: form.unit || 'each',
     price: String(form.price).trim(),
+    storeName: form.storeName.trim() || undefined,
     purchaseDate: form.purchaseDate || '',
     notes: form.notes.trim() || undefined,
   }
@@ -94,6 +107,7 @@ function populatePurchaseForm(form: PurchaseForm, item: PurchaseHistoryItem) {
     quantity: item.quantity,
     unit: item.unit || 'each',
     price: item.price,
+    storeName: item.storeName || '',
     purchaseDate: item.purchaseDate,
     notes: item.notes || '',
   })
@@ -216,6 +230,7 @@ async function saveEditedItem() {
     quantity: String(editForm.quantity).trim() || '-',
     unit: editForm.unit,
     price: String(editForm.price).trim(),
+    storeName: editForm.storeName.trim() || undefined,
     purchaseDate: editForm.purchaseDate,
     notes: editForm.notes.trim() || undefined,
   }
@@ -315,6 +330,7 @@ async function handleAddItem() {
                       <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Product Name</th>
                       <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Qty / Unit</th>
                       <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Price</th>
+                      <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Store</th>
                       <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Purchase Date</th>
                       <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted">Action</th>
                     </tr>
@@ -336,6 +352,7 @@ async function handleAddItem() {
                         </td>
                         <td class="px-4 py-4 text-sm text-muted">{{ item.quantity }} {{ item.unit }}</td>
                         <td class="px-4 py-4 text-sm text-muted">{{ formatPrice(item.price) }}</td>
+                        <td class="px-4 py-4 text-sm text-muted">{{ item.storeName || '—' }}</td>
                         <td class="px-4 py-4 text-sm text-muted">{{ formatPurchaseDate(item.purchaseDate) }}</td>
                         <td class="px-4 py-4 text-right">
                           <div class="flex items-center justify-end gap-2">
@@ -405,6 +422,7 @@ async function handleAddItem() {
                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Quantity</th>
                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Unit</th>
                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Price</th>
+                    <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Store</th>
                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Purchase Date</th>
                     <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted">Notes</th>
                     <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted">Action</th>
@@ -423,6 +441,9 @@ async function handleAddItem() {
                     </td>
                     <td class="px-3 py-3 align-top">
                       <UInput v-model="row.price" placeholder="0.00" type="number" min="0" step="0.01" />
+                    </td>
+                    <td class="px-3 py-3 align-top">
+                      <UInput v-model="row.storeName" placeholder="Store name" list="store-names-datalist" autocomplete="off" />
                     </td>
                     <td class="px-3 py-3 align-top">
                       <UInput v-model="row.purchaseDate" type="date" />
@@ -484,9 +505,13 @@ async function handleAddItem() {
               <UInput v-model="editForm.price" type="number" min="0" step="0.01" placeholder="0.00" />
             </div>
             <div>
+              <label class="block text-sm font-medium mb-1">Store</label>
+              <UInput v-model="editForm.storeName" placeholder="Store name" list="store-names-datalist" autocomplete="off" />
+            </div>
+          </div>
+          <div>
               <label class="block text-sm font-medium mb-1">Purchase Date</label>
               <UInput v-model="editForm.purchaseDate" type="date" />
-            </div>
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Notes</label>
@@ -506,6 +531,9 @@ async function handleAddItem() {
     <!-- Autocomplete suggestions for product names -->
     <datalist id="product-names-datalist">
       <option v-for="name in uniqueProductNames" :key="name" :value="name" />
+    </datalist>
+    <datalist id="store-names-datalist">
+      <option v-for="name in uniqueStoreNames" :key="name" :value="name" />
     </datalist>
   </UContainer>
 </template>

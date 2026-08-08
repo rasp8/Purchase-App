@@ -9,6 +9,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const profileStore = useProfileStore()
   const purchasesStore = usePurchasesStore()
+  const guestRoutes = new Set(['/', '/shopping-list'])
 
   try {
     const supabase = getSupabase()
@@ -16,10 +17,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
       data: { session },
     } = await supabase.auth.getSession()
 
-    if (!session && to.path !== '/') {
+    if (!session && !guestRoutes.has(to.path)) {
       profileStore.clear()
       purchasesStore.reset()
       return navigateTo('/')
+    }
+
+    if (!session) {
+      profileStore.clear()
+      purchasesStore.reset()
     }
 
     if (session && to.path === '/') {
@@ -33,7 +39,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     console.warn('Auth check failed:', error)
     profileStore.clear()
     purchasesStore.reset()
-    if (to.path !== '/') {
+    if (!guestRoutes.has(to.path)) {
       return navigateTo('/')
     }
   }

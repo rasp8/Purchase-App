@@ -134,6 +134,20 @@ async function handleVerificationCode() {
               >
                 Send verification code
               </UButton>
+              <div class="my-4 flex items-center gap-3 text-sm text-muted">
+                <div class="h-px flex-1 bg-default" />
+                <span>or</span>
+                <div class="h-px flex-1 bg-default" />
+              </div>
+              <UButton
+                to="/shopping-list"
+                class="w-full"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-list-checks"
+              >
+                Continue with shopping lists
+              </UButton>
             </UFormField>
             <p v-if="statusMessage" class="text-sm text-muted mt-2">{{ statusMessage }}</p>
           </UCard>
