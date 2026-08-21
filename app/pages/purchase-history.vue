@@ -31,7 +31,7 @@ const editingItemId = ref<string | null>(null)
 const toast = useToast()
 
 const purchasesStore = usePurchasesStore()
-const { items: homepageItems, isLoading: itemsLoading } = storeToRefs(purchasesStore)
+const { items: homepageItems } = storeToRefs(purchasesStore)
 const {
   loadPurchases,
   createPurchases,
@@ -147,12 +147,6 @@ function purchaseCount(item: PurchaseHistoryItem) {
   const key = item.productName.trim().toLowerCase()
   return productPurchaseHistory.value.get(key)?.length ?? 1
 }
-
-const quickStats = computed(() => [
-  { label: 'Products on page', value: String(homepageItems.value.length) },
-  { label: 'Signed-in state', value: 'Active'},
-  { label: 'Supabase', value: 'Connected' },
-])
 
 onMounted(async () => {
   try {
@@ -298,30 +292,71 @@ async function handleAddItem() {
         </div>
       </div>
 
-      <div class="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,0.9fr)]">
-        <UCard class="p-6">
-          <div class="space-y-5">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <h2 class="text-xl font-semibold">Overview</h2>
+      <p v-if="homepageItems.length === 0" class="text-sm text-muted sm:hidden">
+        No purchase history found. Add an item to get started.
+      </p>
+
+      <div v-else class="grid gap-4 sm:hidden">
+        <UCard
+          v-for="item in homepageItems"
+          :key="item.id"
+          class="p-5"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="font-semibold">{{ item.productName }}</p>
+                <UBadge
+                  v-if="purchaseCount(item) > 1"
+                  color="primary"
+                  variant="soft"
+                  size="sm"
+                >
+                  {{ purchaseCount(item) }}×
+                </UBadge>
               </div>
-            <UBadge color="primary" variant="soft">
-              {{ itemsLoading ? 'Loading…' : `${homepageItems.length} items` }}
-            </UBadge>
+              <p class="mt-1 text-xs text-muted">{{ formatPurchaseDate(item.purchaseDate) }}</p>
             </div>
+            <p class="shrink-0 text-lg font-semibold">{{ formatPrice(item.price) }}</p>
+          </div>
 
-            <div class="grid gap-4 sm:grid-cols-3">
-              <UCard
-                v-for="stat in quickStats"
-                :key="stat.label"
-                variant="soft"
-                class="p-4"
-              >
-                <p class="text-sm text-muted">{{ stat.label }}</p>
-                <p class="mt-2 text-2xl font-semibold">{{ stat.value }}</p>
-              </UCard>
+          <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <dt class="text-xs text-muted">Quantity</dt>
+              <dd class="mt-1 font-medium">{{ item.quantity }} {{ item.unit }}</dd>
             </div>
+            <div>
+              <dt class="text-xs text-muted">Store</dt>
+              <dd class="mt-1 font-medium">{{ item.storeName || '—' }}</dd>
+            </div>
+          </dl>
 
+          <div v-if="item.notes" class="mt-4 rounded-lg bg-elevated/50 p-3">
+            <p class="text-xs text-muted">Notes</p>
+            <p class="mt-1 text-sm">{{ item.notes }}</p>
+          </div>
+
+          <div class="mt-4 flex justify-end gap-2 border-t border-default pt-4">
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-pencil"
+              @click="openEditModal(item)"
+            >
+              Edit
+            </UButton>
+            <UButton
+              color="error"
+              variant="ghost"
+              icon="i-lucide-trash-2"
+              aria-label="Delete item"
+              @click="deleteItem(item.id)"
+            />
+          </div>
+        </UCard>
+      </div>
+
+      <UCard class="hidden p-6 sm:block">
             <div class="overflow-hidden rounded-xl border border-default">
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-default">
@@ -389,9 +424,7 @@ async function handleAddItem() {
                 </table>
               </div>
             </div>
-          </div>
-        </UCard>
-      </div>
+      </UCard>
     </div>
 
     <UModal
@@ -413,7 +446,79 @@ async function handleAddItem() {
             </UButton>
           </div>
 
-          <div class="overflow-hidden rounded-xl border border-default">
+          <div class="space-y-4 sm:hidden">
+            <div
+              v-for="(row, index) in draftRows"
+              :key="row.id"
+              class="space-y-3 rounded-xl border border-default p-4"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <p class="font-medium">Entry {{ index + 1 }}</p>
+                <UButton
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  aria-label="Remove entry"
+                  @click="removeDraftRow(row.id)"
+                />
+              </div>
+
+              <UFormField label="Product name">
+                <UInput
+                  v-model="row.productName"
+                  placeholder="Tomatoes"
+                  list="product-names-datalist"
+                  autocomplete="off"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Quantity">
+                <UInput v-model="row.quantity" placeholder="2" class="w-full" />
+              </UFormField>
+
+              <UFormField label="Unit">
+                <USelect
+                  v-model="row.unit"
+                  :items="UNIT_OPTIONS"
+                  value-key="value"
+                  label-key="label"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Price">
+                <UInput
+                  v-model="row.price"
+                  placeholder="0.00"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Store">
+                <UInput
+                  v-model="row.storeName"
+                  placeholder="Store name"
+                  list="store-names-datalist"
+                  autocomplete="off"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Purchase date">
+                <UInput v-model="row.purchaseDate" type="date" class="w-full" />
+              </UFormField>
+
+              <UFormField label="Notes">
+                <UInput v-model="row.notes" placeholder="Optional note…" class="w-full" />
+              </UFormField>
+            </div>
+          </div>
+
+          <div class="hidden overflow-hidden rounded-xl border border-default sm:block">
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-default">
                 <thead class="bg-elevated/50">
