@@ -51,23 +51,9 @@ const productPurchaseHistory = computed(() => {
   return map
 })
 
-/** Summary card for each unique product (used in overview). */
-const productSummaries = computed(() => {
-  return uniqueProductNames.value.map(name => {
-    const key = name.toLowerCase()
-    const entries = [...(productPurchaseHistory.value.get(key) ?? [])].sort(
-      (a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime(),
-    )
-    const latest = entries[0]
-    return {
-      name,
-      count: entries.length,
-      lastDate: latest?.purchaseDate ?? '',
-      lastPrice: latest?.price ?? '',
-      lastUnit: latest?.unit ?? 'each',
-    }
-  })
-})
+const productSummaries = computed(() =>
+  uniqueProductNames.value.map(name => ({ name })),
+)
 
 /** All purchases for the selected product, sorted oldest → newest. */
 const selectedProductHistory = computed(() => {
@@ -275,18 +261,8 @@ onMounted(async () => {
             class="p-5 cursor-pointer hover:ring-2 hover:ring-primary/40 transition-shadow"
             @click="selectProduct(p.name)"
           >
-            <div class="flex items-start justify-between gap-2">
-              <div class="space-y-1">
-                <p class="font-semibold text-base">{{ p.name }}</p>
-                <p class="text-xs text-muted">{{ p.count }} purchase{{ p.count !== 1 ? 's' : '' }}</p>
-                <p class="text-xs text-muted">Last: {{ formatPurchaseDate(p.lastDate) }}</p>
-              </div>
-              <div class="text-right shrink-0">
-                <p class="text-lg font-semibold">{{ formatPrice(p.lastPrice) }}</p>
-                <p class="text-xs text-muted">latest price</p>
-              </div>
-            </div>
-            <div class="mt-3 flex justify-end">
+            <p class="font-semibold text-base">{{ p.name }}</p>
+            <div class="mt-3">
               <UButton size="xs" color="primary" variant="soft" icon="i-lucide-chart-line">
                 View stats
               </UButton>
