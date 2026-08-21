@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const { user, supabase } = await requireAuth(event)
   const { data, error } = await supabase
     .schema('purchase-app')
-    .from('Item')
+    .from('purchase_history')
     .delete()
     .eq('id', itemId)
     .eq('user_id', user.id)

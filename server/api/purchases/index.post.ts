@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
 
   const { data, error } = await supabase
     .schema('purchase-app')
-    .from('Item')
+    .from('purchase_history')
     .insert(rows)
     .select('id, user_id, product_name, quantity, unit, price, store_name, purchase_date, notes, created_at, updated_at')
     .returns<ItemRow[]>()

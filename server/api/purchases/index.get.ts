@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   const { user, supabase } = await requireAuth(event)
   const { data, error } = await supabase
     .schema('purchase-app')
-    .from('Item')
+    .from('purchase_history')
     .select('id, user_id, product_name, quantity, unit, price, store_name, purchase_date, notes, created_at, updated_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
