@@ -398,7 +398,7 @@ async function handleAddItem() {
       v-model:open="showAddModal"
       title="Add product entries"
       description="Fill in the table rows below. Product IDs are assigned automatically when you save."
-      content-class="sm:max-w-5xl"
+      class="sm:max-w-7xl"
       @update:open="value => !value && closeAddModal()"
     >
       <template #body>
