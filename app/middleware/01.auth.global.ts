@@ -9,7 +9,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const profileStore = useProfileStore()
   const purchasesStore = usePurchasesStore()
-  const guestRoutes = new Set(['/', '/shopping-list'])
+  const guestRoutes = new Set(['/'])
 
   try {
     const supabase = getSupabase()
