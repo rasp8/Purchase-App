@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
   const payload = normalizeItemInput(await readBody<UpdateItemBody>(event))
   const { data, error } = await supabase
     .schema('purchase-app')
-    .from('Item')
+    .from('purchase_history')
     .update({
       ...payload,
       updated_at: new Date().toISOString(),
